@@ -36,12 +36,12 @@ async function findUserByEmail(email) {
   return db.collection("users").findOne({ email });
 }
 
-async function getAllUsers() {
+async function getUsers() {
   const db = await getDatabase();
   return db.collection("users").find({}).toArray();
 }
 
-async function deleteUsers() {
+async function deleteUser() {
   const db = await getDatabase();
   return db.collection("users").deleteOne();
 }
@@ -75,11 +75,12 @@ async function deleteUserByQuery(query) {
     throw error;
   }
 }
+
 module.exports = {
   createUser,
   findUserByEmail,
-  getAllUsers,
-  deleteUsers,
+  getUsers,
+  deleteUser,
   deleteUserById,
   deleteUserByIds,
   deleteUserByQuery,

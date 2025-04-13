@@ -1,15 +1,16 @@
+// controllers/authController.js
 const userModel = require('../models/userModel');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const { validateUserData } = require('../utils/validation');
 
 async function registerUser(userData) {
-  let email = userData.email;
-  let user = await userModel.findUserByEmail({ email })
-  console.log(user);
-    if (user) return {
-        valid: true,
-        message: "User already exists.",
-        insertedId: user.insertedId
+  // Check if a user with the same email already exists
+  const existingUser = await userModel.findUserByEmail(userData.email)
+    if (existingUser) return {
+        valid: false,
+        message: "User with this email already exists.",
+        insertedId: existingUser._id
     }
 
   const validation = validateUserData(userData);
@@ -24,15 +25,21 @@ async function registerUser(userData) {
 }
 
 async function loginUser(userData) {
-    const user = await userModel.findUserByEmail(userData.email);
-    if (!user) {
-        return { valid: false, message: 'Invalid username or password' };
-    }
-    const passwordMatch = await bcrypt.compare(userData.password, user.password);
-    if (!passwordMatch) {
-      return { valid: false, message: "Invalid username or password" };
-    }
-    return { valid: true, message: 'Login successful!' };
+  const user = await userModel.findUserByEmail(userData.email);
+  if (!user) {
+    return { valid: false, message: 'User is not exits' };
+  }
+  const passwordMatch = await bcrypt.compare(userData.password, user.password);
+  if (!passwordMatch) {
+    return { valid: false, message: "Invalid username or password" };
+  }
+
+  const token = jwt.sign(
+    { userId: user._id, email: user.email },
+    process.env.JWT_SECRET,
+    { expiresIn: "1h" }
+  );
+  return { valid: true, message: 'Login successful!', token: token };
 }
 
 module.exports = { registerUser, loginUser };

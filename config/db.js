@@ -35,4 +35,11 @@ async function connectDB() {
     }
 };
 
-module.exports = { connectDB, client };
+async function closeDB() {
+  if (client) {
+    await client.close();
+    console.log("MongoDB connection closed");
+  }
+}
+
+module.exports = { connectDB, closeDB, client };

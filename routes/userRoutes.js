@@ -1,92 +1,99 @@
+// routes/userRoutes.js
 const {
-  getAllUsers,
-  getUserByEmailId,
-} = require("../controllers/userController");
-const { deleteUsers, deleteUserByQuery, deleteUserById } = require("../models/userModel");
-const url = require('url');
+  getUsers,
+  deleteUser,
+  deleteUserById,
+  deleteUserByIds,
+  deleteUserByQuery,
+} = require("../models/userModel.js");
+const { authenticateToken } = require("../middlewares/authMiddleware.js");
+const { getUserByEmailId } = require("../controllers/userController.js");
 
-async function handleGetAllUsers(req, res) {
-  try {
-    const users = await getAllUsers();
-
-    res.statusCode = 200;
-    res.setHeader("Content-Type", "application/json");
-    res.end(JSON.stringify(users));
-  } catch (error) {
-    console.error(error);
-    res.statusCode = 500;
-    res.setHeader("Content-Type", "application/json");
-    res.end(JSON.stringify({ error: "Internal Server Error" }));
-  }
+async function handleGetUser(req, res) {
+  authenticateToken(req, res, async () => {
+    try {
+      const email = req.body.email;
+      const user = await getUserByEmailId(email);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(user));
+    } catch (error) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ message: "Internal server error" }));
+    }
+  })
 }
 
-async function handleGetUserByEmail(req, res) {
-  const email = "khushikanwar@gmail.com";
-  try {
-    const user = await getUserByEmailId(email);
-    console.log("🐞 User data is here: ", user);
-    res.statusCode = 200;
-    res.setHeader("Content-Type", "application/json");
-    res.end(JSON.stringify(user));
-  } catch (error) {
-    console.error(error);
-    res.statusCode = 500;
-    res.setHeader("Content-Type", "application/json");
-    res.end(JSON.stringify({ error: "Internal Server Error" }));
-  }
-}
-
-async function handleDeleteUsers(req, res) {
-  try {
-    const result = await deleteUsers();
-
-    res.statusCode = 200;
-    res.setHeader("Content-Type", "application/json");
-    res.end(JSON.stringify(result));
-  } catch (error) {
-    console.error(error);
-    res.statusCode = 500;
-    res.setHeader("Content-Type", "application/json");
-    res.end(JSON.stringify({ error: "Internal Server Error" }));
-  }
+async function handleGetUsers(req, res) {
+  authenticateToken(req, res, async () => {
+    try {
+      const users = await getUsers();
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(users));
+    } catch (error) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ message: "Internal server error" }));
+    }
+  });
 }
 
 async function handleDeleteUser(req, res) {
-    const userId = req.url.split('/').pop();
-    console.log(userId);
+  authenticateToken(req, res, async () => {
     try {
-        const result = await deleteUserById(userId);
-            res.statusCode = 200;
-            res.setHeader("Content-Type", "application/json");
-        res.end(JSON.stringify(result));
+      await deleteUser();
+      res.writeHead(204);
+      res.end();
     } catch (error) {
-            res.statusCode = 500;
-            res.setHeader("Content-Type", "application/json");
-            res.end(JSON.stringify({ error: "Internal Server Error" }));
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ message: "Internal server error" }));
     }
+  });
+}
+
+async function handleDeleteUserById(req, res) {
+  authenticateToken(req, res, async () => {
+    try {
+      const userId = req.url.split("/").pop();
+      const result = await deleteUserById(userId);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ result: result }));
+    } catch (error) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ message: "Internal server error" }));
+    }
+  });
 }
 
 async function handleDeleteUsersByQuery(req, res) {
-      try {
-        const parsedUrl = url.parse(req.url, true);
-        const query = parsedUrl.query;
-        
-        // if (query.age) {
-        //     query.age = parseInt(query.age);
-        // }
-        console.log(query);
-
-          const result = await deleteUserByQuery(query);
-          
-          res.statusCode = 200;
-          res.setHeader("Content-Type", "application/json");
-          res.end(JSON.stringify(result));
-        } catch (error) {
-            console.error(error);
-            res.statusCode = 400;
-            res.setHeader("Content-Type", "application/json");
-            res.end(JSON.stringify({ error: "Invalid query" }));
-        }
+  authenticateToken(req, res, async () => {
+    try {
+      const query = JSON.parse(
+        decodeURIComponent(req.url.split("?query=").pop())
+      );
+      await deleteUserByQuery(query);
+      res.writeHead(204);
+      res.end();
+    } catch (error) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ message: "Internal server error" }));
+    }
+  });
 }
 
-module.exports = { handleGetAllUsers, handleGetUserByEmail, handleDeleteUser, handleDeleteUsers, handleDeleteUsersByQuery };
+function userRoutes(req, res) {
+  if (req.url === "/user" && req.method === "GET") {
+    handleGetUser(req, res);
+  } else if (req.url === "/users" && req.method === "GET") {
+    handleGetUsers(req, res);
+  } else if (req.url === "/users" && req.method === "DELETE") {
+    handleDeleteUser(req, res);
+  } else if (req.url.startsWith("/users/") && req.method === "DELETE") {
+    handleDeleteUserById(req, res);
+  } else if (req.url.startsWith("/users/query") && req.method === "DELETE") {
+    handleDeleteUsersByQuery(req, res);
+  } else {
+    res.writeHead(404, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ message: "Not Found" }));
+  }
+}
+
+module.exports = { userRoutes };
