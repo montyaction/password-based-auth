@@ -1,3 +1,4 @@
+// models/userSchema.js
 const { connectDB } = require("../config/db");
 
 async function setUserSchema() {
@@ -15,6 +16,8 @@ async function setUserSchema() {
             "age",
             "email",
             "password",
+            "role", // Added role to required
+            "isVerified", // Added isVerified to required
             "createdAt",
             "updatedAt",
           ],
@@ -37,6 +40,16 @@ async function setUserSchema() {
               pattern: "^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+.[a-zA-Z]{2,4}$",
             },
             password: {
+              bsonType: "string",
+            },
+            role: { // Define role property
+              bsonType: "string",
+              enum: ["user", "admin", "editor"],
+            },
+            isVerified: { // Define isVerified property
+              bsonType: "bool",
+            },
+            verificationToken: { // Define verificationToken property
               bsonType: "string",
             },
             createdAt: {

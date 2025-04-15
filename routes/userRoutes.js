@@ -6,7 +6,7 @@ const {
   deleteUserByIds,
   deleteUserByQuery,
 } = require("../models/userModel.js");
-const { authenticateToken } = require("../middlewares/authMiddleware.js");
+const { authenticateToken, authorizeRole } = require("../middlewares/authMiddleware.js");
 const { getUserByEmailId } = require("../controllers/userController.js");
 
 async function handleGetUser(req, res) {
@@ -20,20 +20,21 @@ async function handleGetUser(req, res) {
       res.writeHead(500, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ message: "Internal server error" }));
     }
-  })
+  });
 }
 
 async function handleGetUsers(req, res) {
-  authenticateToken(req, res, async () => {
-    try {
-      const users = await getUsers();
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify(users));
-    } catch (error) {
-      res.writeHead(500, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ message: "Internal server error" }));
-    }
-  });
+  authenticateToken(req, res, () =>
+    authorizeRole(['admin', 'editor'])(req, res, async () => {
+      try {
+        const users = await getUsers();
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(users));
+      } catch (error) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ message: "Internal server error" }));
+      }
+    }));
 }
 
 async function handleDeleteUser(req, res) {

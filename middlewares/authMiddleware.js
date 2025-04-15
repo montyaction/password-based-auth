@@ -1,6 +1,23 @@
 // middleware/authMiddleware.js
 const jwt = require("jsonwebtoken");
 
+function authorizeRole(roles = []) {
+  return (req, res, next) => {
+    if (!req.user || !req.user.role) {
+      res.statusCode = 403;
+      res.setHeader("Content-Type", "application/json");
+      return res.end(JSON.stringify({ message: "Forbidden - Role not assigned" }));
+    }
+    if (roles.length === 0 || roles.includes(req.user.role)) {
+      next();
+    } else {
+      res.statusCode = 403;
+      res.setHeader("Content-Type", "application/json");
+      return res.end(JSON.stringify({ message: "Forbidden - Insufficient role" }));
+    }
+  };
+}
+
 function authenticateToken(req, res, next) {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
@@ -32,4 +49,4 @@ function authenticateToken(req, res, next) {
   });
 }
 
-module.exports = { authenticateToken };
+module.exports = { authenticateToken, authorizeRole };
