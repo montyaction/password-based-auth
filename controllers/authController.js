@@ -20,7 +20,10 @@ async function registerUser(userData) {
     userData.password,
     parseInt(process.env.BCRYPT_SALT_ROUNDS)
   );
+
   userData.password = hashedPassword;
+  userData.role = userData.role || 'user';  //Set default role if not provided
+
   return userModel.createUser(userData);
 }
 
