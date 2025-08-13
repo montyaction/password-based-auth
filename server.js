@@ -7,7 +7,7 @@ dotenv.config();
 const { connectDB, closeDB, client } = require("./config/db");
 const { setUserSchema } = require("./models/userSchema");
 
-const hostname = process.env.HOSTNAME;
+const hostname = process.env.HOSTNAME || "localhost";
 const port = process.env.PORT || 3000;
 
 async function main() {
