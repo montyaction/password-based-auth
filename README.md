@@ -14,7 +14,7 @@ This is a Node.js RESTful API for managing user data. It provides endpoints for 
 
 1.  **Clone the repository:**
     ```bash
-    git clone [https://github.com/your-username/your-repo-name.git](https://github.com/your-username/your-repo-name.git)
+    git clone [https://github.com/montyaction/password-based-auth.git](https://github.com/montyaction/password-based-auth.git)
     cd your-repo-name
     ```
 
