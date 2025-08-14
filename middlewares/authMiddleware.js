@@ -18,7 +18,7 @@ function authorizeRole(roles = []) {
   };
 }
 
-function authenticateToken(req, res, next) {
+function authenticateAccessToken(req, res, next) {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
 
@@ -28,16 +28,15 @@ function authenticateToken(req, res, next) {
     return res.end(JSON.stringify({ message: "Authentication required" }));
   }
   
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+  jwt.verify(token, process.env.JWT_ACCESS_SECRET, (err, user) => {
     if (err) {
       // err will contain information about the error, including expiration
       console.error("Token verification error:", err.message); // Log the specific error
-      
-      if (err.name === 'TokenExpiredError') {
+
+      if (err.name === "TokenExpiredError") {
         res.statusCode = 401;
         res.setHeader("Content-Type", "application/json");
         return res.end(JSON.stringify({ message: "Token expired" }));
-
       } else {
         res.statusCode = 403;
         res.setHeader("Content-Type", "application/json");
@@ -49,4 +48,4 @@ function authenticateToken(req, res, next) {
   });
 }
 
-module.exports = { authenticateToken, authorizeRole };
+module.exports = { authenticateAccessToken, authorizeRole };
