@@ -1,3 +1,5 @@
+// routes/userRoutes.js
+
 const {
   getUsers,
   updateUser,
@@ -14,6 +16,13 @@ const {
 const { getUserByEmailId } = require("../controllers/userController.js");
 const jwt = require("jsonwebtoken");
 const { URL } = require("url");
+
+/**
+ * @swagger
+ * tags:
+ * name: Users
+ * description: User management and retrieval
+ */
 
 /**
  * Sends a JSON response with consistent headers and error handling.
@@ -43,6 +52,43 @@ function handleAsyncError(handler) {
 /**
  * GET /user - Requires email in the body.
  */
+/**
+ * @swagger
+ * /user:
+ *   get:
+ *     summary: Retrieve a user by email
+ *     description: Requires an email in the request body to fetch user details.
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 description: The email of the user to retrieve.
+ *                 example: user@example.com
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved user details.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                   description: The user ID.
+ *                 email:
+ *                   type: string
+ *                   description: The user's email.
+ *       400:
+ *         description: Bad request, email is missing or invalid.
+ *       500:
+ *         description: Internal server error.
+ */
 const handleGetUser = handleAsyncError(async (req, res) => {
   const email = req.body.email;
   if (!email) {
@@ -57,6 +103,49 @@ const handleGetUser = handleAsyncError(async (req, res) => {
 
 /**
  * GET /users - Handles advanced queries with query parameters.
+ */
+
+/**
+ * @swagger
+ * /users:
+ *   get:
+ *     summary: Retrieve a list of users
+ *     description: Handles advanced queries with query parameters to filter users.
+ *     tags: [Users]
+ *     parameters:
+ *       - in: query
+ *         name: role
+ *         schema:
+ *           type: string
+ *         description: Filter users by role.
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Limit the number of users returned.
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved the list of users.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                     description: The user ID.
+ *                   email:
+ *                     type: string
+ *                     description: The user's email.
+ *                   role:
+ *                     type: string
+ *                     description: The user's role.
+ *       400:
+ *         description: Bad request, invalid query parameters.
+ *       500:
+ *         description: Internal server error.
  */
 const handleGetUsers = handleAsyncError(async (req, res) => {
   const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
@@ -184,7 +273,6 @@ const handleGetCurrentUser = handleAsyncError(async (req, res) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       userId = decoded.userId;
     } catch (jwtErr) {
-
       return sendResponse(res, 401, {
         message: "Invalid or expired token",
         error: jwtErr.message,
@@ -213,7 +301,11 @@ function userRoutes(req, res) {
     { path: "/users/:id", method: "PUT", handler: handleUpdateUser },
     { path: "/users", method: "DELETE", handler: handleDeleteUser },
     { path: "/users/:id", method: "DELETE", handler: handleDeleteUserById },
-    { path: "/users/query", method: "DELETE", handler: handleDeleteUsersByQuery },
+    {
+      path: "/users/query",
+      method: "DELETE",
+      handler: handleDeleteUsersByQuery,
+    },
     { path: "/user/me", method: "GET", handler: handleGetCurrentUser },
   ];
   // { path: "/users/search", method: "GET", handler: handleUsersSearch },
