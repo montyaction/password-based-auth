@@ -9,7 +9,7 @@ const { setUserSchema } = require("./models/userSchema");
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./swagger.js");
 
-const hostname = process.env.HOSTNAME || "localhost";
+const hostname = process.env.HOST_NAME || "localhost";
 const port = process.env.PORT || 3000;
 
 async function main() {
