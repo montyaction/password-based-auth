@@ -7,7 +7,7 @@ dotenv.config();
 const { connectDB } = require("../config/db");
 const { setUserSchema } = require("../models/userSchema");
 const swaggerUi = require("swagger-ui-express");
-const swaggerSpec = require("./swagger.js");
+const swaggerSpec = require("../swagger.js");
 
 // This flag ensures the database connection and schema setup only run once
 let isDbConnected = false;
