@@ -2,39 +2,41 @@
 const {
   registerUserController,
   loginUserController,
-  verifyEmailController
+  verifyEmailController,
+  refreshTokenController
 } = require("../controllers/authController");
 const url = require("url");
+const { sendSuccess, sendError } = require("../utils/responseHandler");
 
 async function handleRegister(req, res) {
-    try {
-      const result = await registerUserController(req.body);
+  try {
+    const result = await registerUserController(req.body);
 
-      res.statusCode = result.valid ? 201 : 400;
-      res.setHeader("Content-Type", "application/json");
-      res.end(JSON.stringify({
-          message: "Data received",
-          body: req.body,
-          resData: result,
-      }));
-    } catch (error) {
-      // console.log("Received body (non-JSON):", body);
-      console.error(error);
-
-      res.statusCode = 400;
-      res.setHeader("Content-Type", "application/json");
-      res.end(JSON.stringify({ valid: false, message: "Invalid JSON" }));
+    if (result.valid) {
+      sendSuccess(res, 201, "User registered successfully! Please check your email");
+    } else {
+      sendError(res, 400, result.message);
     }
+  } catch (error) {
+    sendError(res, 500, "Registration failed", error);
+  }
 }
 
 async function handleLogin(req, res) {
   try {
     const result = await loginUserController(req.body);
-    res.writeHead(result.valid ? 200 : 401, {"Content-Type": "application/json"});
-    res.end(JSON.stringify(result));
+
+    if (result.valid) {
+      sendSuccess(res, 200, "Login successful", {
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
+        user: result.user
+      });
+    } else {
+      sendError(res, 401, result.message);
+    }
   } catch (error) {
-    res.writeHead(400, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ valid: false, message: "Invalid request" }));
+    sendError(res, 500, "Login failed", error);
   }
 }
 
@@ -43,18 +45,36 @@ async function handleVerifyEmail(req, res) {
   const token = parsedUrl.query.token;
 
   if (!token) {
-    res.writeHead(400, { 'Content-Type': 'application/json' });
-    return res.end(JSON.stringify({ message: "Verification token is missing" }));
+    return sendError(res, 400, "Verification token is missing");
   }
 
   try {
-    await verifyEmailController(token);
-    res.writeHead(200, { "Content-Type": "text/html" });
-    res.end("Email verified successfully! You can now log in.");
+    const result = await verifyEmailController(token);
+
+    if (result.valid) {
+      res.writeHead(200, { "Content-Type": "text/html" });
+      res.end("<h1>Email verified successfully!</h1><p>You can now log in to your account.</p>");
+    } else {
+      sendError(res, 400, result.message);
+    }
   } catch (error) {
-    console.error('Email verification error:', error);
-    res.writeHead(500, { "Content-Type": "application/json"});
-    res.end(JSON.stringify({ message: "Internal server error during email verification."}));
+    sendError(res, 500, "Email verification failed", error);
+  }
+}
+
+async function handleRefreshToken(req, res) {
+  try {
+    const result = await refreshTokenController(req.body.refreshToken);
+
+    if (result.valid) {
+      sendSuccess(res, 200, "Token refreshed successfully", {
+        accessToken: result.accessToken
+      });
+    } else {
+      sendError(res, 401, result.message);
+    }
+  } catch (error) {
+    sendError(res, 500, "Token refresh failed", error);
   }
 }
 
@@ -67,18 +87,17 @@ function authRoutes(req, res) {
     handleLogin(req, res);
   } else if (pathname === "/verify-email" && req.method === "GET") {
     handleVerifyEmail(req, res);
+  } else if (pathname === "/refresh-token" && req.method === "POST") {
+    handleRefreshToken(req, res);
   } else {
-    res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(
-      JSON.stringify({
-        message: "Auth endpoint not found",
-        availableEndpoints: [
-          "POST /register",
-          "POST /login",
-          "GET /verify-email?token=VERIFICATION_TOKEN",
-        ],
-      })
-    );
+    sendError(res, 404, "Auth endpoint not found", {
+      availableEndpoints: [
+        "POST /register",
+        "POST /login",
+        "GET /verify-email?token=VERIFICATION_TOKEN",
+        "POST /refresh-token"
+      ]
+    });
   }
 }
 

@@ -16,6 +16,7 @@ const {
 const { getUserByEmailId } = require("../controllers/userController.js");
 const jwt = require("jsonwebtoken");
 const { URL } = require("url");
+const { sendSuccess, sendError } = require("../utils/responseHandler");
 
 /**
  * @swagger
@@ -28,12 +29,11 @@ const { URL } = require("url");
  * Sends a JSON response with consistent headers and error handling.
  */
 function sendResponse(res, statusCode, data, error) {
-  res.writeHead(statusCode, { "Content-Type": "application/json" });
   if (error) {
-    console.error(error);
-    data = { message: data, error: error.message };
+    sendError(res, statusCode, data, error);
+  } else {
+    sendSuccess(res, statusCode, data.message || "Success", data.message ? null : data);
   }
-  res.end(JSON.stringify(data));
 }
 
 /**

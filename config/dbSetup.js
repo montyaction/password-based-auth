@@ -1,5 +1,5 @@
 // config/dbSetup.js
-import { connectDB } from "./db";
+const { connectDB } = require("./db");
 
 async function createUniqueEmailIndex() {
     try {
@@ -19,3 +19,5 @@ async function setupDatabase() {
 }
 
 setupDatabase();
+
+module.exports = { setupDatabase, createUniqueEmailIndex };
