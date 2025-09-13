@@ -25,20 +25,23 @@ const { sendSuccess, sendError } = require("../utils/responseHandler");
  * description: User management and retrieval
  */
 
-/**
- * Sends a JSON response with consistent headers and error handling.
- */
+// Sends a JSON response with consistent headers and error handling.
+
 function sendResponse(res, statusCode, data, error) {
   if (error) {
     sendError(res, statusCode, data, error);
   } else {
-    sendSuccess(res, statusCode, data.message || "Success", data.message ? null : data);
+    sendSuccess(
+      res,
+      statusCode,
+      data.message || "Success",
+      data.message ? null : data
+    );
   }
 }
 
-/**
- * Handles errors in asynchronous route handlers.
- */
+// Handles errors in asynchronous route handlers.
+
 function handleAsyncError(handler) {
   return async (req, res) => {
     try {
@@ -49,9 +52,8 @@ function handleAsyncError(handler) {
   };
 }
 
-/**
- * GET /user - Requires email in the body.
- */
+// GET /user - Requires email in the body.
+
 /**
  * @swagger
  * /user:
@@ -81,11 +83,19 @@ function handleAsyncError(handler) {
  *                 id:
  *                   type: string
  *                   description: The user ID.
+ *                 first_name:
+ *                   type: string
+ *                   description: The user's first name.
+ *                 last_name:
+ *                  type: string
+ *                  description: The user's last name.
  *                 email:
  *                   type: string
  *                   description: The user's email.
  *       400:
  *         description: Bad request, email is missing or invalid.
+ *       404:
+ *        description: User not found.
  *       500:
  *         description: Internal server error.
  */
@@ -101,31 +111,52 @@ const handleGetUser = handleAsyncError(async (req, res) => {
   sendResponse(res, 200, user);
 });
 
-/**
- * GET /users - Handles advanced queries with query parameters.
- */
+// GET /users - Handles advanced queries with query parameters.
 
 /**
  * @swagger
  * /users:
  *   get:
- *     summary: Retrieve a list of users
- *     description: Handles advanced queries with query parameters to filter users.
+ *     summary: Get all users with advanced query support
  *     tags: [Users]
+ *     description: |
+ *       Retrieve all users with support for sorting, pagination, field selection.
+ *       Query parameters:
+ *       - **sortBy**: field to sort by (e.g., first_name)
+ *       - **order**: asc | desc
+ *       - **limit**: max number of results
+ *       - **skip**: number of records to skip
+ *       - **select**: comma-separated fields (e.g., first_name,email)
  *     parameters:
  *       - in: query
- *         name: role
+ *         name: sortBy
  *         schema:
  *           type: string
- *         description: Filter users by role.
+ *         description: Field to sort by
+ *       - in: query
+ *         name: order
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *         description: Sort order
  *       - in: query
  *         name: limit
  *         schema:
  *           type: integer
- *         description: Limit the number of users returned.
+ *         description: Limit number of results
+ *       - in: query
+ *         name: skip
+ *         schema:
+ *           type: integer
+ *         description: Skip number of results
+ *       - in: query
+ *         name: select
+ *         schema:
+ *           type: string
+ *         description: Fields to include (comma separated)
  *     responses:
  *       200:
- *         description: Successfully retrieved the list of users.
+ *         description: List of users
  *         content:
  *           application/json:
  *             schema:
@@ -133,19 +164,16 @@ const handleGetUser = handleAsyncError(async (req, res) => {
  *               items:
  *                 type: object
  *                 properties:
- *                   id:
+ *                   first_name:
  *                     type: string
- *                     description: The user ID.
+ *                   last_name:
+ *                     type: string
  *                   email:
  *                     type: string
- *                     description: The user's email.
- *                   role:
- *                     type: string
- *                     description: The user's role.
  *       400:
- *         description: Bad request, invalid query parameters.
+ *         description: Invalid query parameters
  *       500:
- *         description: Internal server error.
+ *         description: Server error
  */
 const handleGetUsers = handleAsyncError(async (req, res) => {
   const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
@@ -165,8 +193,86 @@ handleGetUsers.middleware = [
   authorizeRole(["admin", "editor"]),
 ];
 
+// PUT /users/:id - Requires access token and user ID.
 /**
- * PUT /users/:id - Requires access token and user ID.
+ * @swagger
+ * /users/{id}:
+ *   get:
+ *     summary: Get user by ID
+ *     tags: [Users]
+ *     description: Retrieve a user by their unique ID
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *     responses:
+ *       200:
+ *         description: User retrieved successfully
+ *       400:
+ *         description: Invalid ID format
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ *   put:
+ *     summary: Update user by ID
+ *     tags: [Users]
+ *     description: Update an existing user’s data by ID
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               first_name:
+ *                 type: string
+ *               last_name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               age:
+ *                 type: integer
+ *               role:
+ *                 type: string
+ *                 enum: [user, admin, editor]
+ *     responses:
+ *       200:
+ *         description: User updated successfully
+ *       400:
+ *         description: Invalid input data
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ *   delete:
+ *     summary: Delete user by ID
+ *     tags: [Users]
+ *     description: Delete a user by their unique ID
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User deleted successfully
+ *       400:
+ *         description: Invalid ID format
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
  */
 const handleUpdateUser = handleAsyncError(async (req, res) => {
   const userId = req.params.id;
@@ -187,9 +293,8 @@ const handleUpdateUser = handleAsyncError(async (req, res) => {
 });
 handleUpdateUser.middleware = [authenticateAccessToken];
 
-/**
- * DELETE /users - Requires access token.
- */
+// DELETE /users - Requires access token.
+
 const handleDeleteUser = handleAsyncError(async (req, res) => {
   const result = await deleteUser();
   if (!result) {
@@ -199,9 +304,8 @@ const handleDeleteUser = handleAsyncError(async (req, res) => {
 });
 handleDeleteUser.middleware = [authenticateAccessToken];
 
-/**
- * DELETE /users/:id - Requires access token and user ID.
- */
+// DELETE /users/:id - Requires access token and user ID.
+
 const handleDeleteUserById = handleAsyncError(async (req, res) => {
   const userId = req.params.id;
   if (!userId) {
@@ -215,8 +319,29 @@ const handleDeleteUserById = handleAsyncError(async (req, res) => {
 });
 handleDeleteUserById.middleware = [authenticateAccessToken];
 
+// DELETE /users/query?query={...} - Requires access token.
 /**
- * DELETE /users/query?query={...} - Requires access token.
+ * @swagger
+ * /users/query:
+ *   delete:
+ *     summary: Delete users by query
+ *     tags: [Users]
+ *     description: Delete users by a custom query object
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             example:
+ *               role: user
+ *     responses:
+ *       200:
+ *         description: Users deleted successfully
+ *       400:
+ *         description: Invalid query object
+ *       500:
+ *         description: Server error
  */
 const handleDeleteUsersByQuery = handleAsyncError(async (req, res) => {
   const queryParam = req.url.split("?query=")[1];
@@ -236,9 +361,8 @@ const handleDeleteUsersByQuery = handleAsyncError(async (req, res) => {
 });
 handleDeleteUsersByQuery.middleware = [authenticateAccessToken];
 
-/**
- * GET /user/me - Requires access token.
- */
+// DELETE /users/ids - Requires access token and array of user IDs in body.
+
 const handleGetCurrentUser = handleAsyncError(async (req, res) => {
   let userId;
   if (req.headers.authorization) {
@@ -361,3 +485,21 @@ function userRoutes(req, res) {
 }
 
 module.exports = { userRoutes };
+
+/**
+ * @swagger
+ * /users/me:
+ *   get:
+ *     summary: Get current authenticated user
+ *     tags: [Users]
+ *     description: Retrieve details of the currently authenticated user using the JWT token
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Current user details retrieved successfully
+ *       401:
+ *         description: Unauthorized - Missing or invalid token
+ *       500:
+ *         description: Server error
+ */
