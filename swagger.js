@@ -1,5 +1,9 @@
 // swagger.js
 const swaggerJsdoc = require('swagger-jsdoc');
+require('dotenv').config();
+
+const hostname = process.env.HOST_NAME || 'localhost';
+const port = process.env.PORT || 3000;
 
 const options = {
     definition: {
@@ -11,7 +15,8 @@ const options = {
         },
         servers: [
             {
-                url: 'http://LAPTOP-7GH2D819:3000', // The URL of your server
+                url: `http://${hostname}:${port}`, // Dynamic URL based on environment
+                description: 'Development server'
             },
         ],
     },
